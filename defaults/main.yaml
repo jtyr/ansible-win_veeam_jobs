@@ -1,0 +1,16 @@
+---
+
+# Veeam job name (must be provided by the user)
+win_veeam_jobs_job: null
+
+# VM name in the Veeam job (must be provided by the user)
+win_veeam_jobs_vm: null
+
+# Default state
+win_veeam_jobs_state: present
+
+# Final list
+win_veeam_jobs_list:
+  - job: "{{ win_veeam_jobs_job }}"
+    vm: "{{ win_veeam_jobs_vm }}"
+    state: "{{ win_veeam_jobs_state }}"

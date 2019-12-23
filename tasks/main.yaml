@@ -1,0 +1,5 @@
+---
+
+- name: Process jobs list
+  include_tasks: item.yaml
+  loop: "{{ win_veeam_jobs_list }}"

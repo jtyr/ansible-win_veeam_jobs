@@ -1,0 +1,54 @@
+---
+
+- name: Checking parameters
+  assert:
+    that:
+      - item.job != None
+      - item.vm != None
+  tags:
+    - win_veeam_jobs_assert
+
+- name: Check if job '{{ item.job }}' exists
+  win_shell: >
+    Add-PSSnapin VeeamPSSnapin;
+    Connect-VBRServer;
+    Get-VBRJob -Name "{{ item.job }}" | select Name | %{$_.Name};
+    Disconnect-VBRServer
+  register: win_veeam_jobs_job_exists
+  changed_when: no
+
+- name: Check if VM '{{ item.vm }}' is already associated with the job '{{ item.job }}'
+  win_shell: >
+    Add-PSSnapin VeeamPSSnapin;
+    Connect-VBRServer;
+    Get-VBRJob -Name "{{ item.job }}" | Get-VBRJobObject -Name "{{ item.vm }}" | select Name | %{$_.Name};
+    Disconnect-VBRServer
+  register: win_veeam_jobs_vm_exists
+  changed_when: no
+
+- name: Add VM '{{ item.vm }}' into the job '{{ item.job }}'
+  win_shell: >
+    Add-PSSnapin VeeamPSSnapin;
+    Connect-VBRServer;
+    $job = Get-VBRJob -Name "{{ item.job }}";
+    Find-VBRViEntity -Name "{{ item.vm }}" | Add-VBRViJobObject -Job $job;
+    Disconnect-VBRServer
+  when: >
+    (
+      'state' not in item or
+      item['state'] == 'present'
+    ) and
+    win_veeam_jobs_job_exists.stdout | trim != '' and
+    win_veeam_jobs_vm_exists.stdout | trim == ''
+
+- name: Remove VM '{{ item.vm }}' from the job '{{ item.job }}'
+  win_shell: >
+    Add-PSSnapin VeeamPSSnapin;
+    Connect-VBRServer;
+    Get-VBRJob -Name "{{ item.job }}" | Get-VBRJobObject -Name "{{ item.vm }}" | Remove-VBRJobObject -Completely;
+    Disconnect-VBRServer
+  when: >
+    'state' in item and
+    item['state'] == 'absent' and
+    win_veeam_jobs_job_exists.stdout | trim != '' and
+    win_veeam_jobs_vm_exists.stdout | trim != ''
